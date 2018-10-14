@@ -4,8 +4,8 @@
 Description
 Ansible playbook that takes mysql backup and send it to remote server via sftp
 
-Requirements
-Ansible >= 2.4 python-openstackclient shade
+Requirements:
+Ansible >= 2.4
 
 Pre Execution Check-list:
  Remote user with sudo access 
