@@ -1,0 +1,39 @@
+- hosts: '{{ host }}'
+  vars:
+      exclude_db:
+          - Database
+          - information_schema
+          - sys
+          - performance_schema
+          - mysql
+  tasks:
+    - name: get db names
+      shell: 'mysql -u {{ user }} -p{{ pass }} -h{{ db_host }} --port={{ port | default("3306") }} -e "show databases;" '
+      register: dblist
+    - easy_install:
+        name: pip
+        state: latest
+    - name: Install the Python MySQLB module
+      yum:
+        name: MySQL-python
+    - name: output datbase list
+      debug:
+        msg: '{{ dblist }}'
+    - name: ansible create directory example
+      file:
+       path: /root/dumps
+       state: directory
+    - name: backup databases
+      mysql_db:
+        state: dump
+        name: "{{ item }}"
+        target: "{{ dump_dir }}/{{ item }}-{{lookup('pipe','date +%Y%m%d%H%M%S')}}.sql"
+        login_user: '{{ user }}'
+        login_password: "{{ pass }}"
+        login_port: '{{ port | default("3306") }}'
+        login_host: '{{ db_host }}'
+      with_items: "{{ dblist.stdout_lines | difference(exclude_db) }}"
+    - name: copy sftp user script
+      copy: src=sftp_mysql.sh dest=/root/sftp_mysql.sh
+    - name: put db dumps to remote server
+      shell: sh /root/sftp_mysql.sh {{ sftp_user }} {{ remote_ip }}
